@@ -1,9 +1,15 @@
 var debug = require('debug')('nodejs-gpx-mongodb:server');
 var mongoose = require('mongoose');
 
-var dbURI = 'mongodb://localhost:27017/ultraresultgpx';
+var dbURI = 'mongodb://localhost:27017/leaflet_map';
+//leaflet_map ultraresultgpx
 
-var userSchema = new mongoose.Schema({
+var Schema = mongoose.Schema;
+
+// Mongoose Model definition
+//var Json = mongoose.model('JString', JsonSchema, 'layercollection');
+
+var userSchema = new Schema({
   name: String,
   email: {type: String, unique:true},
   createdOn: { type: Date, default: Date.now },
@@ -11,14 +17,21 @@ var userSchema = new mongoose.Schema({
   lastLogin: Date
 });
 
-var trackSchema = new mongoose.Schema({
-  time: { type: Date, default: Date.now },
-  day:         String,
-  hhmm:        String,
-  startOrEnd:  String,
-  start:     { type: Boolean, default: false },
-  end:       { type: Boolean, default: false },
-  pause:     { type: Number,  default: 50 }
+
+var JsonSchema = new Schema(
+    {
+	name: String,
+	type: Schema.Types.Mixed
+    },
+    {
+	collection : 'layercollection'
+    }
+)
+// -> inside route/*.js file
+// var Json = mongoose.model('Json');
+
+var trackSchema = new Schema({
+
 });
 
 // // adding new static method for projects
@@ -37,6 +50,7 @@ mongoose.connect(dbURI);
 // Build/Compile User and Project models
 mongoose.model('User', userSchema);
 mongoose.model('Track', trackSchema);
+mongoose.model('Json', JsonSchema);
 
 mongoose.connection.on('connected', function () {
     console.log('Mongoose connected to ' + dbURI);

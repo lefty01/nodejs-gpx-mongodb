@@ -1,3 +1,4 @@
+var debug = require('debug')('nodejs-gpx-mongodb:server');
 var path = require('path');
 var util = require('util');
 var fs = require('fs');
@@ -24,6 +25,7 @@ exports.fileupload = function(req, res) {
     req.pipe(req.busboy);
     req.busboy.on('file', function (fieldname, file, filename, encoding, mimetype) {
 	req.session.uploadedFile = req.session.uploadPath + filename;
+	req.session.uploadedFileName = filename;
         console.log("Uploading: " + filename + " to: " + req.session.uploadPath);
 	console.log("filename length: " + filename.length);
 	console.log("file mimetype: " + mimetype);
@@ -69,10 +71,10 @@ exports.fileupload = function(req, res) {
 		res.send('ERROR: file too large (limit is 10MB)!');
 	    }
 	    else {
-		res.redirect(200, 'parsegpx');
-		//res.send(util.format('Upload complete!\nuploaded %s (%d Kb)',
-		//		     filename, fsize / 1024));
-		
+		res.render('gpxinfo', {
+		    'gpxfilename' : filename,
+		    'gpxfilesize' : fsize
+		});
 	    }
 	});
     });
@@ -82,25 +84,27 @@ exports.fileupload = function(req, res) {
 
 // parse GPX
 exports.parsegpx = function(req, res) {
-    //res.send('Upload complete!')
-    res.send(util.format('Upload complete!<br>\nuploaded %s (%d Kb)',
-			 path.basename(req.session.uploadedFile), req.session.uploadedFileSize / 1024));
-
+    //res.send(util.format('Upload complete!<br>\nuploaded %s (%d Kb)',
+    //			 path.basename(req.session.uploadedFile), req.session.uploadedFileSize / 1024));
     //path.parse(filename).name; // file.ext -> file
     //path.parse(filename).ext;  // file.ext -> .ext
+    console.log("parsegpx: file=" + req.session.uploadedFileName);
 
-    var outfile = req.session.uploadPath + path.parse(path.basename(req.session.uploadedFile)).name + ".json";
+    var outfile = req.session.uploadPath + path.parse(req.session.uploadedFileName).name + ".json";
+    console.log("write json outfile: " + outfile);
+    
     // using togeojson in nodejs
-
     // node doesn't have xml parsing or a dom. use xmldom
     var xmldomParser = new xmldom.DOMParser();
-
     var gpx = xmldomParser.parseFromString(fs.readFileSync(req.session.uploadedFile, 'utf8')); // 'ascii' ?
     var convertedGpx = tj.gpx(gpx);
     var convertedWithStyles = tj.gpx(gpx, { styles: true });
-    debug("GeoJSON: " + pretty(convertedGpx));
+    console.log("GeoJSON: " + pretty(convertedGpx));
+    //console.log(convertedGpx);
 
-    console.log("write json outfile: " + outfile);
+    //res.send(convertedWithStyles);
+    // GeoJSON
+
     fs.writeFile(outfile, convertedGpx, function(err) {
 	if(err) {
             return console.log(err);
@@ -120,4 +124,5 @@ exports.parsegpx = function(req, res) {
 	res.send(ex);
     };
 
+    res.json(convertedGpx);
 }

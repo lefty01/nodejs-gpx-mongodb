@@ -48,8 +48,9 @@ app.use(function(req, res, next) {
     next();
 });
 
-app.use('/',      index);
+app.use('/', index);
 app.use('/users', users);
+
 app.get('/upload', common.upload);
 app.get('/parsegpx', common.parsegpx);
 app.post('/fileupload', common.fileupload);
